@@ -132,7 +132,44 @@ CREATE EXTERNAL TABLE IF NOT EXISTS alb_access_logs (
              "storage.location.template" = "s3://amzn-s3-demo-bucket/AWSLogs/<ACCOUNT-NUMBER>/elasticloadbalancing/<REGION>/${day}"
             )
 ```
-
+SQL query for the 504s in the incident window:
+```
+SELECT
+    time,
+    client_ip,
+    request,
+    elb_status_code,
+    target_status_code,
+    target_ip,
+    target_port,
+    target_processing_time,
+    request_creation_time
+FROM alb_logs_scms_prd
+WHERE elb_status_code = 504
+  AND time >= '2026-10-20T23:30:00.000Z'
+  AND time <= '2026-10-21T00:30:00.000Z'
+ORDER BY time ASC
+LIMIT 200;
+```
+slowest requests (not just 504s) to understand what was timing out:
+```
+SELECT
+    time,
+    client_ip,
+    request,
+    elb_status_code,
+    target_status_code,
+    target_ip,
+    target_port,
+    target_processing_time,
+    request_creation_time
+FROM alb_logs_scms_prd
+WHERE time >= '2026-10-20T23:30:00.000Z'
+  AND time <= '2026-10-21T00:30:00.000Z'
+  AND target_processing_time > 30
+ORDER BY target_processing_time DESC
+LIMIT 200;
+```
 
 
 Once that runs successfully, you can sanity-check it with:
